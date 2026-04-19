@@ -1,0 +1,10 @@
+export const TILE_SIZE = 64;
+export const MAP_SIZE = 40;
+export const MAP_WIDTH = MAP_SIZE * TILE_SIZE;
+export const MAP_HEIGHT = MAP_SIZE * TILE_SIZE;
+export const UNIT_MOVE_SPEED = 2.4;
+export const STRIDE_LENGTH = 14;
+export const STARTING_AETHER = 500;
+export const UNIT_CAP = 50;
+export const TILE_VARIANTS = 4;
+export const SPRITE_FRAMES = 4;

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Aether Command RTS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #0a0a0c;
+        font-family: 'Inter', sans-serif;
+        color: white;
+        touch-action: none;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      .ui-panel {
+        pointer-events: none;
+      }
+      .ui-panel * {
+        pointer-events: auto;
+      }
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 2s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .active-mode {
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        border-color: rgba(59, 130, 246, 1) !important;
+        background: rgba(59, 130, 246, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container" class="relative w-screen h-screen overflow-hidden">
+      <canvas id="gameCanvas"></canvas>
+
+      <div class="ui-panel absolute inset-0 flex flex-col justify-between p-2 sm:p-4">
+        <div class="flex justify-between items-start gap-2">
+          <div
+            class="bg-black/80 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-2xl"
+          >
+            <div class="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1">
+              Logistics
+            </div>
+            <div class="flex gap-3">
+              <div class="text-sm sm:text-lg font-mono">
+                <span id="gold-val">500</span> <span class="text-yellow-500">Aet</span>
+              </div>
+              <div class="text-sm sm:text-lg font-mono">
+                <span id="units-val">0</span>/50 <span class="text-green-500">U</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-end gap-2">
+            <div class="flex bg-black/80 backdrop-blur-md p-1 rounded-xl border border-white/10">
+              <button
+                id="mode-pan"
+                class="px-3 py-2 rounded-lg text-xs font-bold transition-all border border-transparent active-mode"
+                title="Pan Camera"
+              >
+                Pan
+              </button>
+              <button
+                id="mode-select"
+                class="px-3 py-2 rounded-lg text-xs font-bold transition-all border border-transparent"
+                title="Box Select"
+              >
+                Select
+              </button>
+            </div>
+
+            <div
+              class="bg-black/80 backdrop-blur-md p-2 rounded-xl border border-white/10 flex flex-col gap-2 items-end"
+            >
+              <input
+                id="theme-prompt"
+                type="text"
+                placeholder="Biome: e.g. Desert Ruins"
+                class="bg-white/10 border border-white/20 rounded px-2 py-1 text-[10px] focus:outline-none w-32 sm:w-48"
+              />
+              <div class="flex gap-1">
+                <button
+                  id="gen-art-btn"
+                  class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all shadow-lg"
+                >
+                  New World
+                </button>
+                <button
+                  id="refine-art-btn"
+                  class="hidden bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all shadow-lg border border-purple-400/50"
+                >
+                  Refine Art
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-center w-full">
+          <div
+            id="selection-box"
+            class="hidden bg-black/95 backdrop-blur-xl border-t-4 border-blue-500 p-4 sm:p-6 rounded-t-3xl w-full max-w-lg flex gap-4 items-center shadow-2xl pointer-events-auto"
+          >
+            <div
+              id="unit-portrait"
+              class="w-16 h-16 sm:w-20 sm:h-20 bg-white/5 rounded-lg border border-white/10 flex items-center justify-center overflow-hidden shrink-0"
+            >
+              <div class="text-2xl" id="unit-icon-ui">U</div>
+            </div>
+            <div class="flex-grow">
+              <h2
+                id="unit-name"
+                class="text-lg sm:text-xl font-black italic uppercase tracking-tighter"
+              >
+                Unit
+              </h2>
+              <p id="unit-status" class="text-[10px] sm:text-xs text-gray-400">Combat Ready</p>
+              <div class="mt-2 flex gap-2">
+                <button
+                  id="btn-deselect"
+                  class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-[10px] border border-white/10 uppercase font-bold tracking-tighter"
+                >
+                  Deselect
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="gen-overlay"
+      class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center"
+    >
+      <div class="text-center">
+        <div class="loader mx-auto mb-4"></div>
+        <p id="gen-main-text" class="text-lg font-light tracking-widest uppercase animate-pulse">
+          Constructing Biome Tilemap...
+        </p>
+        <p id="gen-subtext" class="text-[10px] text-gray-500 mt-2">
+          Normalizing animation frames...
+        </p>
+      </div>
+    </div>
+
+    <div
+      id="error-box"
+      class="hidden fixed bottom-4 right-4 bg-red-900/90 border border-red-500 p-4 rounded-xl max-w-xs z-[60] shadow-2xl"
+    >
+      <p class="text-xs font-bold uppercase tracking-widest text-red-200 mb-1">
+        Transmission Error
+      </p>
+      <p id="error-message" class="text-[10px] text-red-100"></p>
+      <button
+        onclick="this.parentElement.classList.add('hidden')"
+        class="mt-2 text-[10px] underline"
+      >
+        Dismiss
+      </button>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
